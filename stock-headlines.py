@@ -59,7 +59,7 @@ def get_thestreet_headlines():
     return headline_list
 
 # Set up the OpenAI API client
-openai.api_key = "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"
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Combine all headlines
 all_headlines = []
