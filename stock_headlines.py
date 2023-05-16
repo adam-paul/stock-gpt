@@ -36,7 +36,6 @@ def get_investing_headlines():
     url = 'https://www.investing.com/news/latest-news'
     headers = {'User-Agent': 'Mozilla/5.0'}
     response = requests.get(url, headers=headers)
-    print(response.text)
     soup = BeautifulSoup(response.text, 'lxml')
     headlines = soup.find_all('a', class_='title', limit=100)
     headline_list = [headline.text.strip() for headline in headlines]
@@ -71,40 +70,22 @@ def get_benzinga_headlines():
 
     return headline_list
 
-def get_reuters_headlines():
-    url = 'https://www.reuters.com/finance'
+def get_investorplace_headlines():
+    url = 'https://investorplace.com/category/todays-market/'
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'lxml')
-    headlines = soup.find_all('h3', class_='story-title', limit=100)
-    headline_list = [headline.text.strip() for headline in headlines]
-
-    return headline_list
-
-def get_business_insider_headlines():
-    url = 'https://www.businessinsider.com/'
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'lxml')
-    headlines = soup.find_all('h2', class_='tout__title', limit=100)
-    headline_list = [headline.text.strip() for headline in headlines]
-
-    return headline_list
-
-def get_ft_headlines():
-    url = 'https://www.ft.com/'
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'lxml')
-    headlines = soup.find_all('a', class_='js-teaser-heading-link', limit=100)
-    headline_list = [headline.text.strip() for headline in headlines]
-
-    return headline_list
-
-def get_economist_headlines():
-    url = 'https://www.economist.com/'
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'lxml')
-    headlines = soup.find_all('span', class_='teaser__headline', limit=100)
-    headline_list = [headline.text.strip() for headline in headlines]
-
+    
+    # Get top story headlines
+    top_story_headlines = soup.find_all('h4', class_='headline-c todays-market-top-stories-list__title')
+    top_story_headline_list = [headline.a.text.strip() for headline in top_story_headlines]
+    
+    # Get other headlines
+    other_headlines = soup.find_all('h2', class_='entry-title ipm-category-title')
+    other_headline_list = [headline.a.text.strip() for headline in other_headlines]
+    
+    # Combine and return all headlines
+    headline_list = top_story_headline_list + other_headline_list
+    
     return headline_list
 
 # Set up the OpenAI API client
@@ -113,8 +94,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 # A list of your scraping functions
 scraping_functions = [get_yahoo_headlines, get_marketwatch_headlines, get_seeking_alpha_headlines, 
                       get_investing_headlines, get_cnbc_headlines, get_thestreet_headlines, 
-                      get_benzinga_headlines, get_reuters_headlines, get_business_insider_headlines, 
-                      get_ft_headlines, get_economist_headlines]
+                      get_benzinga_headlines, get_investorplace_headlines]
 
 def run():
     # Use a ThreadPoolExecutor to run the functions concurrently
@@ -135,7 +115,7 @@ def run():
         messages=[
             {
                 "role": "system",
-                "content": "You are a financial advisor. I will give you many headlines from financial news websites, and I want you to use that information to produce  a list of stocks you think are going to perform  well tomorrow. If you think the stock will see a positive return, name the stock, give your probability it's going to go up tomorrow (and by how much), and provide a sentence for why. If you think a stock will go down or if you are uncertain about a stock, don't bother listing it.\n\nHere are the headlines:"
+                "content": "You are a financial advisor. I will give you many headlines from financial news websites, and I want you to use that information to produce  a list of every relevant stock from the news. If you think the stock will see a positive return tomorrow, put a +1 beside it, and provide a sentence for why. If you think a stock will go down, do the same but put a -1. If you are uncertain about a stock, or you think it will remain flat, put a 0.\n\nHere are the headlines:"
             },
             {
                 "role": "user",
